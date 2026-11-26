@@ -1,0 +1,908 @@
+generator client {
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  importFileExtension = "ts"
+  previewFeatures = ["partialIndexes"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model account_tokens {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.Uuid
+  token_hash String    @unique
+  kind       String
+  expires_at DateTime  @db.Timestamptz(6)
+  used_at    DateTime? @db.Timestamptz(6)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime  @default(now()) @db.Timestamptz(6)
+  app_users  app_users @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id, kind], map: "account_tokens_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model app_users {
+  id                String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email             String?          @unique
+  password_hash     String?
+  email_verified_at DateTime?        @db.Timestamptz(6)
+  session_version   Int              @default(0)
+  created_at        DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime         @default(now()) @db.Timestamptz(6)
+  account_tokens    account_tokens[]
+  profiles          profiles?
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model audit_logs {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actor_id   String?   @db.Uuid
+  action     String
+  entity     String
+  entity_id  String?   @db.Uuid
+  details    Json      @default("{}")
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime  @default(now()) @db.Timestamptz(6)
+  profiles   profiles? @relation(fields: [actor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([created_at(sort: Desc)], map: "audit_created")
+  @@index([actor_id], map: "audit_logs_actor_id_fk_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model baseline_surveys {
+  id                                              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  farmer_id                                       String          @db.Uuid
+  crop_id                                         String          @db.Uuid
+  typical_quantity                                Decimal         @db.Decimal
+  loss_quantity                                   Decimal         @db.Decimal
+  unit                                            String
+  handling                                        String
+  storage                                         String
+  transport                                       String
+  buyer_access                                    String
+  reported_sales                                  Decimal         @db.Decimal
+  reported_costs                                  Decimal         @db.Decimal
+  challenges                                      String
+  training_needs                                  String
+  survey_date                                     DateTime        @db.Date
+  period_days                                     Int
+  pilot_phase                                     String          @default("pilot")
+  source                                          String
+  verified_by                                     String?         @db.Uuid
+  created_by                                      String          @db.Uuid
+  created_at                                      DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at                                      DateTime        @default(now()) @db.Timestamptz(6)
+  profiles_baseline_surveys_created_byToprofiles  profiles        @relation("baseline_surveys_created_byToprofiles", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  crops                                           crops           @relation(fields: [crop_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  farmer_profiles                                 farmer_profiles @relation(fields: [farmer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profiles_baseline_surveys_verified_byToprofiles profiles?       @relation("baseline_surveys_verified_byToprofiles", fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([farmer_id, crop_id, survey_date], map: "baseline_farmer")
+  @@index([created_by], map: "baseline_surveys_created_by_fk_idx")
+  @@index([crop_id], map: "baseline_surveys_crop_id_fk_idx")
+  @@index([verified_by], map: "baseline_surveys_verified_by_fk_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model buyer_offers {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  listing_id       String           @db.Uuid
+  buyer_id         String           @db.Uuid
+  quantity         Decimal          @db.Decimal(16, 3)
+  unit_price       Decimal          @db.Decimal(16, 2)
+  message          String?
+  status           String           @default("pending")
+  created_at       DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime         @default(now()) @db.Timestamptz(6)
+  profiles         profiles         @relation(fields: [buyer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  produce_listings produce_listings @relation(fields: [listing_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  orders           orders?
+
+  @@index([buyer_id, status], map: "offers_buyer")
+  @@index([listing_id], map: "offers_listing")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model contact_messages {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  email      String
+  message    String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model coordinator_areas {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  coordinator_id String    @db.Uuid
+  district_id    String    @db.Uuid
+  created_at     DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime  @default(now()) @db.Timestamptz(6)
+  profiles       profiles  @relation(fields: [coordinator_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  districts      districts @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([coordinator_id, district_id])
+  @@index([district_id], map: "coordinator_areas_district_id_fk_idx")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model countries {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String    @unique
+  code       String    @unique
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime  @default(now()) @db.Timestamptz(6)
+  regions    regions[]
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model crop_categories {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String   @unique
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  crops      crops[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model crop_guidance {
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  crop_id                String    @db.Uuid
+  title                  String
+  harvesting             String
+  sorting                String
+  storage                String
+  packaging              String
+  transport              String
+  risks                  String
+  reviewed_by            String?   @db.Uuid
+  reviewer_qualification String?
+  published              Boolean   @default(false)
+  created_at             DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime  @default(now()) @db.Timestamptz(6)
+  crops                  crops     @relation(fields: [crop_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profiles               profiles? @relation(fields: [reviewed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([crop_id], map: "crop_guidance_crop_id_fk_idx")
+  @@index([reviewed_by], map: "crop_guidance_reviewed_by_fk_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model crop_unit_conversions {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  crop_id     String   @db.Uuid
+  from_unit   String
+  to_unit     String
+  factor      Decimal  @db.Decimal
+  reviewed_by String   @db.Uuid
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @db.Timestamptz(6)
+  crops       crops    @relation(fields: [crop_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profiles    profiles @relation(fields: [reviewed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([crop_id, from_unit, to_unit])
+  @@index([reviewed_by], map: "crop_unit_conversions_reviewed_by_fk_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model crops {
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  category_id           String                  @db.Uuid
+  name                  String                  @unique
+  local_name            String?
+  units                 String[]                @default(["kg"])
+  active                Boolean                 @default(true)
+  created_at            DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime                @default(now()) @db.Timestamptz(6)
+  baseline_surveys      baseline_surveys[]
+  crop_guidance         crop_guidance[]
+  crop_unit_conversions crop_unit_conversions[]
+  crop_categories       crop_categories         @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  farm_crops            farm_crops[]
+  followup_surveys      followup_surveys[]
+  produce_listings      produce_listings[]
+  training_sessions     training_sessions[]
+
+  @@index([category_id], map: "crops_category")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model deliveries {
+  id                                           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  request_id                                   String             @unique @db.Uuid
+  quote_id                                     String             @unique @db.Uuid
+  transporter_id                               String             @db.Uuid
+  status                                       String             @default("assigned")
+  actual_charge                                Decimal?           @db.Decimal(16, 2)
+  confirmed_by                                 String?            @db.Uuid
+  picked_up_at                                 DateTime?          @db.Timestamptz(6)
+  delivered_at                                 DateTime?          @db.Timestamptz(6)
+  created_at                                   DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at                                   DateTime           @default(now()) @db.Timestamptz(6)
+  profiles_deliveries_confirmed_byToprofiles   profiles?          @relation("deliveries_confirmed_byToprofiles", fields: [confirmed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  transport_quotes                             transport_quotes   @relation(fields: [quote_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  transport_requests                           transport_requests @relation(fields: [request_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profiles_deliveries_transporter_idToprofiles profiles           @relation("deliveries_transporter_idToprofiles", fields: [transporter_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([confirmed_by], map: "deliveries_confirmed_by_fk_idx")
+  @@index([transporter_id], map: "delivery_transporter")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model districts {
+  id                                                                       String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  region_id                                                                String               @db.Uuid
+  name                                                                     String
+  created_at                                                               DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at                                                               DateTime             @default(now()) @db.Timestamptz(6)
+  coordinator_areas                                                        coordinator_areas[]
+  regions                                                                  regions              @relation(fields: [region_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  farmer_groups                                                            farmer_groups[]
+  farmer_profiles                                                          farmer_profiles[]
+  farms                                                                    farms[]
+  produce_listings                                                         produce_listings[]
+  training_sessions                                                        training_sessions[]
+  transport_requests_transport_requests_destination_district_idTodistricts transport_requests[] @relation("transport_requests_destination_district_idTodistricts")
+  transport_requests_transport_requests_pickup_district_idTodistricts      transport_requests[] @relation("transport_requests_pickup_district_idTodistricts")
+
+  @@unique([region_id, name])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model expenses {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  farmer_id       String          @db.Uuid
+  harvest_id      String?         @db.Uuid
+  category        String
+  amount          Decimal         @db.Decimal(16, 2)
+  description     String
+  expense_date    DateTime        @db.Date
+  created_by      String          @db.Uuid
+  created_at      DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime        @default(now()) @db.Timestamptz(6)
+  profiles        profiles        @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  farmer_profiles farmer_profiles @relation(fields: [farmer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  harvests        harvests?       @relation(fields: [harvest_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([created_by], map: "expenses_created_by_fk_idx")
+  @@index([farmer_id, expense_date], map: "expenses_farmer")
+  @@index([harvest_id], map: "expenses_harvest_id_fk_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model farm_crops {
+  id         String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  farm_id    String     @db.Uuid
+  crop_id    String     @db.Uuid
+  planted_on DateTime   @db.Date
+  area_acres Decimal?   @db.Decimal
+  created_by String     @db.Uuid
+  created_at DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at DateTime   @default(now()) @db.Timestamptz(6)
+  profiles   profiles   @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  crops      crops      @relation(fields: [crop_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  farms      farms      @relation(fields: [farm_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  harvests   harvests[]
+
+  @@index([farm_id], map: "farm_crop_farm")
+  @@index([created_by], map: "farm_crops_created_by_fk_idx")
+  @@index([crop_id], map: "farm_crops_crop_id_fk_idx")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model farmer_groups {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name              String
+  district_id       String              @db.Uuid
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime            @default(now()) @db.Timestamptz(6)
+  districts         districts           @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  group_memberships group_memberships[]
+
+  @@index([district_id], map: "farmer_groups_district_id_fk_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model farmer_profiles {
+  id                                            String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                                       String?               @unique @db.Uuid
+  full_name                                     String
+  phone                                         String?
+  district_id                                   String                @db.Uuid
+  locality                                      String
+  created_by                                    String                @db.Uuid
+  consent_at                                    DateTime              @db.Timestamptz(6)
+  created_at                                    DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at                                    DateTime              @default(now()) @db.Timestamptz(6)
+  baseline_surveys                              baseline_surveys[]
+  expenses                                      expenses[]
+  profiles_farmer_profiles_created_byToprofiles profiles              @relation("farmer_profiles_created_byToprofiles", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  districts                                     districts             @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profiles_farmer_profiles_user_idToprofiles    profiles?             @relation("farmer_profiles_user_idToprofiles", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  farms                                         farms[]
+  field_reports                                 field_reports[]
+  followup_surveys                              followup_surveys[]
+  group_memberships                             group_memberships[]
+  loss_records                                  loss_records[]
+  orders                                        orders[]
+  produce_listings                              produce_listings[]
+  sales                                         sales[]
+  service_requests                              service_requests[]
+  training_attendance                           training_attendance[]
+  transport_requests                            transport_requests[]
+
+  @@index([district_id], map: "farmer_district")
+  @@index([created_by], map: "farmer_profiles_created_by_fk_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model farms {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  farmer_id       String          @db.Uuid
+  name            String
+  district_id     String          @db.Uuid
+  locality        String
+  size_acres      Decimal         @db.Decimal(14, 4)
+  created_by      String          @db.Uuid
+  created_at      DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime        @default(now()) @db.Timestamptz(6)
+  farm_crops      farm_crops[]
+  profiles        profiles        @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  districts       districts       @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  farmer_profiles farmer_profiles @relation(fields: [farmer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([created_by], map: "farms_created_by_fk_idx")
+  @@index([district_id], map: "farms_district_id_fk_idx")
+  @@index([farmer_id], map: "farms_farmer")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model field_reports {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  farmer_id       String          @db.Uuid
+  observation     String
+  report_date     DateTime        @db.Date
+  created_by      String          @db.Uuid
+  created_at      DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime        @default(now()) @db.Timestamptz(6)
+  profiles        profiles        @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  farmer_profiles farmer_profiles @relation(fields: [farmer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([created_by], map: "field_reports_created_by_fk_idx")
+  @@index([farmer_id], map: "field_reports_farmer_id_fk_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model followup_surveys {
+  id                                              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  farmer_id                                       String          @db.Uuid
+  crop_id                                         String          @db.Uuid
+  typical_quantity                                Decimal         @db.Decimal
+  loss_quantity                                   Decimal         @db.Decimal
+  unit                                            String
+  handling                                        String
+  storage                                         String
+  transport                                       String
+  buyer_access                                    String
+  reported_sales                                  Decimal         @db.Decimal
+  reported_costs                                  Decimal         @db.Decimal
+  challenges                                      String
+  training_needs                                  String
+  survey_date                                     DateTime        @db.Date
+  period_days                                     Int
+  pilot_phase                                     String          @default("pilot")
+  source                                          String
+  verified_by                                     String?         @db.Uuid
+  created_by                                      String          @db.Uuid
+  created_at                                      DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at                                      DateTime        @default(now()) @db.Timestamptz(6)
+  profiles_followup_surveys_created_byToprofiles  profiles        @relation("followup_surveys_created_byToprofiles", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "followup_creator_fk")
+  crops                                           crops           @relation(fields: [crop_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "followup_crop_fk")
+  farmer_profiles                                 farmer_profiles @relation(fields: [farmer_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "followup_farmer_fk")
+  profiles_followup_surveys_verified_byToprofiles profiles?       @relation("followup_surveys_verified_byToprofiles", fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "followup_verifier_fk")
+
+  @@index([farmer_id, crop_id, survey_date], map: "followup_farmer")
+  @@index([created_by], map: "followup_surveys_created_by_fk_idx")
+  @@index([crop_id], map: "followup_surveys_crop_id_fk_idx")
+  @@index([verified_by], map: "followup_surveys_verified_by_fk_idx")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model group_memberships {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  group_id        String          @db.Uuid
+  farmer_id       String          @db.Uuid
+  created_at      DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime        @default(now()) @db.Timestamptz(6)
+  farmer_profiles farmer_profiles @relation(fields: [farmer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  farmer_groups   farmer_groups   @relation(fields: [group_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([group_id, farmer_id])
+  @@index([farmer_id], map: "group_memberships_farmer_id_fk_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model harvest_adjustments {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  harvest_id   String   @db.Uuid
+  kind         String
+  quantity     Decimal  @db.Decimal
+  unit         String
+  reason       String
+  performed_by String   @db.Uuid
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @default(now()) @db.Timestamptz(6)
+  harvests     harvests @relation(fields: [harvest_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profiles     profiles @relation(fields: [performed_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([harvest_id], map: "harvest_adjustments_harvest_id_fk_idx")
+  @@index([performed_by], map: "harvest_adjustments_performed_by_fk_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model harvests {
+  id                                      String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  farm_crop_id                            String                @db.Uuid
+  expected_date                           DateTime              @db.Date
+  expected_quantity                       Decimal               @db.Decimal(16, 3)
+  unit                                    String
+  total_quantity                          Decimal               @default(0) @db.Decimal(16, 3)
+  reserved_quantity                       Decimal               @default(0) @db.Decimal(16, 3)
+  sold_quantity                           Decimal               @default(0) @db.Decimal(16, 3)
+  lost_quantity                           Decimal               @default(0) @db.Decimal(16, 3)
+  retained_quantity                       Decimal               @default(0) @db.Decimal(16, 3)
+  available_quantity                      Decimal?              @default(dbgenerated("((((total_quantity - reserved_quantity) - sold_quantity) - lost_quantity) - retained_quantity)")) @db.Decimal(16, 3)
+  quality                                 String                @default("ungraded")
+  harvested_on                            DateTime?             @db.Date
+  verified_by                             String?               @db.Uuid
+  created_by                              String                @db.Uuid
+  created_at                              DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at                              DateTime              @default(now()) @db.Timestamptz(6)
+  expenses                                expenses[]
+  harvest_adjustments                     harvest_adjustments[]
+  profiles_harvests_created_byToprofiles  profiles              @relation("harvests_created_byToprofiles", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  farm_crops                              farm_crops            @relation(fields: [farm_crop_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profiles_harvests_verified_byToprofiles profiles?             @relation("harvests_verified_byToprofiles", fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  loss_records                            loss_records[]
+  order_items                             order_items[]
+  produce_listings                        produce_listings?
+  sales                                   sales[]
+  transport_requests                      transport_requests[]
+
+  @@index([farm_crop_id], map: "harvest_crop")
+  @@index([expected_date], map: "harvest_due")
+  @@index([created_by], map: "harvests_created_by_fk_idx")
+  @@index([verified_by], map: "harvests_verified_by_fk_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model loss_records {
+  id                                          String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  farmer_id                                   String          @db.Uuid
+  harvest_id                                  String          @db.Uuid
+  quantity                                    Decimal         @db.Decimal(16, 3)
+  unit                                        String
+  loss_date                                   DateTime        @db.Date
+  stage                                       String
+  cause                                       String
+  source                                      String
+  verified_by                                 String?         @db.Uuid
+  created_by                                  String          @db.Uuid
+  created_at                                  DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at                                  DateTime        @default(now()) @db.Timestamptz(6)
+  profiles_loss_records_created_byToprofiles  profiles        @relation("loss_records_created_byToprofiles", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  farmer_profiles                             farmer_profiles @relation(fields: [farmer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  harvests                                    harvests        @relation(fields: [harvest_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profiles_loss_records_verified_byToprofiles profiles?       @relation("loss_records_verified_byToprofiles", fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([created_by], map: "loss_records_created_by_fk_idx")
+  @@index([harvest_id], map: "loss_records_harvest_id_fk_idx")
+  @@index([verified_by], map: "loss_records_verified_by_fk_idx")
+  @@index([farmer_id, loss_date], map: "losses_farmer")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model notifications {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String    @db.Uuid
+  title      String
+  message    String
+  href       String    @default("/workspace")
+  read_at    DateTime? @db.Timestamptz(6)
+  event_key  String?   @unique
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime  @default(now()) @db.Timestamptz(6)
+  profiles   profiles  @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([user_id, created_at(sort: Desc)], map: "notices_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model order_items {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  order_id         String           @db.Uuid
+  harvest_id       String           @db.Uuid
+  listing_id       String           @db.Uuid
+  quantity         Decimal          @db.Decimal(16, 3)
+  unit             String
+  unit_price       Decimal          @db.Decimal(16, 2)
+  created_at       DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime         @default(now()) @db.Timestamptz(6)
+  harvests         harvests         @relation(fields: [harvest_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  produce_listings produce_listings @relation(fields: [listing_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  orders           orders           @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([order_id, harvest_id])
+  @@index([harvest_id], map: "order_items_harvest_id_fk_idx")
+  @@index([listing_id], map: "order_items_listing_id_fk_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model orders {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  offer_id           String               @unique @db.Uuid
+  farmer_id          String               @db.Uuid
+  buyer_id           String               @db.Uuid
+  status             String               @default("accepted")
+  buyer_confirmed    Boolean              @default(false)
+  created_at         DateTime             @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime             @default(now()) @db.Timestamptz(6)
+  order_items        order_items[]
+  profiles           profiles             @relation(fields: [buyer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  farmer_profiles    farmer_profiles      @relation(fields: [farmer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  buyer_offers       buyer_offers         @relation(fields: [offer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sales              sales?
+  transport_requests transport_requests[]
+
+  @@index([buyer_id, status], map: "orders_buyer")
+  @@index([farmer_id, status], map: "orders_farmer")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model platform_settings {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key        String   @unique
+  value      Json
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model produce_listings {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  harvest_id      String          @unique(map: "one_active_listing_per_harvest", where: raw("(status = 'active'::text)")) @db.Uuid
+  farmer_id       String          @db.Uuid
+  crop_id         String          @db.Uuid
+  district_id     String          @db.Uuid
+  quantity        Decimal         @db.Decimal(16, 3)
+  unit            String
+  price           Decimal         @db.Decimal(16, 2)
+  quality         String
+  available_on    DateTime        @db.Date
+  status          String          @default("active")
+  created_at      DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime        @default(now()) @db.Timestamptz(6)
+  buyer_offers    buyer_offers[]
+  order_items     order_items[]
+  crops           crops           @relation(fields: [crop_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  districts       districts       @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  farmer_profiles farmer_profiles @relation(fields: [farmer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  harvests        harvests        @relation(fields: [harvest_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  stored_files    stored_files[]
+
+  @@index([status, crop_id, district_id, available_on], map: "listing_search")
+  @@index([crop_id], map: "produce_listings_crop_id_fk_idx")
+  @@index([district_id], map: "produce_listings_district_id_fk_idx")
+  @@index([farmer_id], map: "produce_listings_farmer_id_fk_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model profiles {
+  id                                                      String                  @id @db.Uuid
+  full_name                                               String
+  phone                                                   String?
+  status                                                  String                  @default("active")
+  consent_at                                              DateTime                @default(now()) @db.Timestamptz(6)
+  created_at                                              DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at                                              DateTime                @default(now()) @db.Timestamptz(6)
+  audit_logs                                              audit_logs[]
+  baseline_surveys_baseline_surveys_created_byToprofiles  baseline_surveys[]      @relation("baseline_surveys_created_byToprofiles")
+  baseline_surveys_baseline_surveys_verified_byToprofiles baseline_surveys[]      @relation("baseline_surveys_verified_byToprofiles")
+  buyer_offers                                            buyer_offers[]
+  coordinator_areas                                       coordinator_areas[]
+  crop_guidance                                           crop_guidance[]
+  crop_unit_conversions                                   crop_unit_conversions[]
+  deliveries_deliveries_confirmed_byToprofiles            deliveries[]            @relation("deliveries_confirmed_byToprofiles")
+  deliveries_deliveries_transporter_idToprofiles          deliveries[]            @relation("deliveries_transporter_idToprofiles")
+  expenses                                                expenses[]
+  farm_crops                                              farm_crops[]
+  farmer_profiles_farmer_profiles_created_byToprofiles    farmer_profiles[]       @relation("farmer_profiles_created_byToprofiles")
+  farmer_profiles_farmer_profiles_user_idToprofiles       farmer_profiles?        @relation("farmer_profiles_user_idToprofiles")
+  farms                                                   farms[]
+  field_reports                                           field_reports[]
+  followup_surveys_followup_surveys_created_byToprofiles  followup_surveys[]      @relation("followup_surveys_created_byToprofiles")
+  followup_surveys_followup_surveys_verified_byToprofiles followup_surveys[]      @relation("followup_surveys_verified_byToprofiles")
+  harvest_adjustments                                     harvest_adjustments[]
+  harvests_harvests_created_byToprofiles                  harvests[]              @relation("harvests_created_byToprofiles")
+  harvests_harvests_verified_byToprofiles                 harvests[]              @relation("harvests_verified_byToprofiles")
+  loss_records_loss_records_created_byToprofiles          loss_records[]          @relation("loss_records_created_byToprofiles")
+  loss_records_loss_records_verified_byToprofiles         loss_records[]          @relation("loss_records_verified_byToprofiles")
+  notifications                                           notifications[]
+  orders                                                  orders[]
+  app_users                                               app_users               @relation(fields: [id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  role_requests                                           role_requests?
+  sales                                                   sales[]
+  service_requests_service_requests_assigned_toToprofiles service_requests[]      @relation("service_requests_assigned_toToprofiles")
+  service_requests_service_requests_created_byToprofiles  service_requests[]      @relation("service_requests_created_byToprofiles")
+  stored_files                                            stored_files[]
+  training_attendance                                     training_attendance[]
+  training_sessions                                       training_sessions[]
+  transport_profiles                                      transport_profiles?
+  transport_quotes                                        transport_quotes[]
+  transport_requests                                      transport_requests[]
+  user_roles_user_roles_approved_byToprofiles             user_roles[]            @relation("user_roles_approved_byToprofiles")
+  user_roles_user_roles_user_idToprofiles                 user_roles?             @relation("user_roles_user_idToprofiles")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model rate_limits {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bucket       String   @unique
+  count        Int      @default(0)
+  window_start DateTime @default(now()) @db.Timestamptz(6)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+  updated_at   DateTime @default(now()) @db.Timestamptz(6)
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model regions {
+  id         String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  country_id String      @db.Uuid
+  name       String
+  created_at DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at DateTime    @default(now()) @db.Timestamptz(6)
+  districts  districts[]
+  countries  countries   @relation(fields: [country_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([country_id, name])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model role_requests {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String   @unique @db.Uuid
+  requested_role app_role
+  status         String   @default("pending")
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime @default(now()) @db.Timestamptz(6)
+  profiles       profiles @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model sales {
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  farmer_id       String          @db.Uuid
+  harvest_id      String          @db.Uuid
+  order_id        String?         @unique @db.Uuid
+  buyer_category  String
+  quantity        Decimal         @db.Decimal(16, 3)
+  unit            String
+  unit_price      Decimal         @db.Decimal(16, 2)
+  sale_date       DateTime        @db.Date
+  confirmed       Boolean         @default(true)
+  created_by      String          @db.Uuid
+  created_at      DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime        @default(now()) @db.Timestamptz(6)
+  profiles        profiles        @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  farmer_profiles farmer_profiles @relation(fields: [farmer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  harvests        harvests        @relation(fields: [harvest_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  orders          orders?         @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([created_by], map: "sales_created_by_fk_idx")
+  @@index([farmer_id, sale_date], map: "sales_farmer")
+  @@index([harvest_id], map: "sales_harvest_id_fk_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model service_requests {
+  id                                              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  farmer_id                                       String          @db.Uuid
+  kind                                            String
+  description                                     String
+  status                                          String          @default("submitted")
+  assigned_to                                     String?         @db.Uuid
+  created_by                                      String          @db.Uuid
+  created_at                                      DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at                                      DateTime        @default(now()) @db.Timestamptz(6)
+  profiles_service_requests_assigned_toToprofiles profiles?       @relation("service_requests_assigned_toToprofiles", fields: [assigned_to], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profiles_service_requests_created_byToprofiles  profiles        @relation("service_requests_created_byToprofiles", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  farmer_profiles                                 farmer_profiles @relation(fields: [farmer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([assigned_to], map: "service_requests_assigned_to_fk_idx")
+  @@index([created_by], map: "service_requests_created_by_fk_idx")
+  @@index([farmer_id], map: "service_requests_farmer_id_fk_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model stored_files {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  owner_id         String            @db.Uuid
+  listing_id       String?           @db.Uuid
+  purpose          String
+  object_key       String            @unique
+  original_name    String
+  mime_type        String
+  size_bytes       Int
+  state            String            @default("pending")
+  created_at       DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime          @default(now()) @db.Timestamptz(6)
+  produce_listings produce_listings? @relation(fields: [listing_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profiles         profiles          @relation(fields: [owner_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([listing_id, state], map: "stored_files_listing")
+  @@index([owner_id, state], map: "stored_files_owner")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model training_attendance {
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  session_id        String            @db.Uuid
+  farmer_id         String            @db.Uuid
+  attended          Boolean           @default(false)
+  recorded_by       String            @db.Uuid
+  created_at        DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime          @default(now()) @db.Timestamptz(6)
+  farmer_profiles   farmer_profiles   @relation(fields: [farmer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profiles          profiles          @relation(fields: [recorded_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  training_sessions training_sessions @relation(fields: [session_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([session_id, farmer_id])
+  @@index([farmer_id], map: "training_attendance_farmer_id_fk_idx")
+  @@index([recorded_by], map: "training_attendance_recorded_by_fk_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model training_sessions {
+  id                  String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title               String
+  district_id         String                @db.Uuid
+  crop_id             String?               @db.Uuid
+  venue               String
+  scheduled_at        DateTime              @db.Timestamptz(6)
+  capacity            Int
+  created_by          String                @db.Uuid
+  created_at          DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime              @default(now()) @db.Timestamptz(6)
+  training_attendance training_attendance[]
+  profiles            profiles              @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  crops               crops?                @relation(fields: [crop_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  districts           districts             @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([created_by], map: "training_sessions_created_by_fk_idx")
+  @@index([crop_id], map: "training_sessions_crop_id_fk_idx")
+  @@index([district_id], map: "training_sessions_district_id_fk_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model transport_profiles {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id             String   @unique @db.Uuid
+  vehicle_description String
+  registration_number String
+  capacity            Decimal  @db.Decimal
+  capacity_unit       String
+  service_districts   String[] @db.Uuid
+  verified            Boolean  @default(false)
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime @default(now()) @db.Timestamptz(6)
+  profiles            profiles @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model transport_quotes {
+  id                 String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  request_id         String             @db.Uuid
+  transporter_id     String             @db.Uuid
+  amount             Decimal            @db.Decimal(16, 2)
+  notes              String?
+  status             String             @default("pending")
+  created_at         DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime           @default(now()) @db.Timestamptz(6)
+  deliveries         deliveries?
+  transport_requests transport_requests @relation(fields: [request_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profiles           profiles           @relation(fields: [transporter_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([request_id, transporter_id])
+  @@index([request_id], map: "quotes_request")
+  @@index([transporter_id], map: "transport_quotes_transporter_id_fk_idx")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model transport_requests {
+  id                                                              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  farmer_id                                                       String             @db.Uuid
+  order_id                                                        String?            @db.Uuid
+  harvest_id                                                      String             @db.Uuid
+  pickup_district_id                                              String             @db.Uuid
+  destination_district_id                                         String             @db.Uuid
+  destination_area                                                String
+  quantity                                                        Decimal            @db.Decimal(16, 3)
+  unit                                                            String
+  collection_date                                                 DateTime           @db.Date
+  status                                                          String             @default("requested")
+  created_by                                                      String             @db.Uuid
+  created_at                                                      DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at                                                      DateTime           @default(now()) @db.Timestamptz(6)
+  deliveries                                                      deliveries?
+  transport_quotes                                                transport_quotes[]
+  profiles                                                        profiles           @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  districts_transport_requests_destination_district_idTodistricts districts          @relation("transport_requests_destination_district_idTodistricts", fields: [destination_district_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  farmer_profiles                                                 farmer_profiles    @relation(fields: [farmer_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  harvests                                                        harvests           @relation(fields: [harvest_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  orders                                                          orders?            @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  districts_transport_requests_pickup_district_idTodistricts      districts          @relation("transport_requests_pickup_district_idTodistricts", fields: [pickup_district_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([farmer_id, status], map: "transport_farmer")
+  @@index([created_by], map: "transport_requests_created_by_fk_idx")
+  @@index([destination_district_id], map: "transport_requests_destination_district_id_fk_idx")
+  @@index([harvest_id], map: "transport_requests_harvest_id_fk_idx")
+  @@index([order_id], map: "transport_requests_order_id_fk_idx")
+  @@index([pickup_district_id], map: "transport_requests_pickup_district_id_fk_idx")
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model user_roles {
+  id                                        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                                   String    @unique @db.Uuid
+  role                                      app_role
+  approved_by                               String?   @db.Uuid
+  created_at                                DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at                                DateTime  @default(now()) @db.Timestamptz(6)
+  profiles_user_roles_approved_byToprofiles profiles? @relation("user_roles_approved_byToprofiles", fields: [approved_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profiles_user_roles_user_idToprofiles     profiles  @relation("user_roles_user_idToprofiles", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([approved_by], map: "user_roles_approved_by_fk_idx")
+}
+
+enum app_role {
+  farmer
+  buyer
+  transporter
+  coordinator
+  admin
+}

@@ -1,0 +1,1 @@
+export default function Loading() { return <main id="main" className="container-page py-20" role="status"><div className="h-3 w-32 animate-pulse rounded bg-primary/30" /><p className="mt-4">Loading your workspace…</p></main>; }

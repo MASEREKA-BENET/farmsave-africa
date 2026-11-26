@@ -2,6 +2,10 @@ node_modules/
 .next/
 .env*
 !.env.example
+.env
+.env.local
+.env.production
+.env.development.local
 coverage/
 playwright-report/
 test-results/
@@ -10,3 +14,9 @@ test-results/
 src/generated/prisma/
 backups/
 *.dump
+/agricultural partners image.html
+/agricultural partners image_files/
+/buyers image.html
+/buyers image_files/
+/coordinators image.html
+/coordinators image_files/
