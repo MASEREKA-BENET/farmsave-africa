@@ -57,7 +57,8 @@ describe("Neon schema through Prisma's PostgreSQL adapter", () => {
     expect(await checkCredentials(" FARMER@PRISMA.EXAMPLE.TEST ", password)).toMatchObject({ id: users.farmer });
     expect(await checkCredentials("farmer@prisma.example.test", "incorrect-password")).toBeNull();
     await expect(registerAccount({ email: "injected@prisma.example.test", password, full_name: "Injected role", account_type: "admin" })).rejects.toThrow("Invalid account type");
-    await expect(registerAccount({ email: "farmer@prisma.example.test", password, full_name: "Duplicate farmer", account_type: "farmer" })).rejects.toMatchObject({ code: "P2002" });
+    await expect(registerAccount({ email: "farmer@prisma.example.test", password, full_name: "Duplicate farmer", account_type: "farmer" })).rejects.toThrow();
+    expect(await prisma().app_users.count({ where: { email: "farmer@prisma.example.test" } })).toBe(1);
   });
   it("preserves imported bcrypt credentials and upgrades them at successful login", async () => {
     const old = await bcryptHash(password, 10);
