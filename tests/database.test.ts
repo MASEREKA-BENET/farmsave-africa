@@ -29,7 +29,8 @@ describe("Real PostgreSQL domain workflows and RLS", () => {
     await actor("transporter"); await rpc("enroll_account", ["transporter"]);
     await actor("coordinator"); await rpc("enroll_account", ["coordinator"]);
     await actor("partner"); await rpc("enroll_account", ["agricultural_partner"]);
-    expect((await db.query("select role from user_roles where user_id=$1", [ids.partner])).rows[0].role).toBe("agricultural_partner");
+    const partnerRole = await db.query<{ role: string }>("select role from user_roles where user_id=$1", [ids.partner]);
+    expect(partnerRole.rows[0]?.role).toBe("agricultural_partner");
     expect((await db.query("select * from user_roles where user_id=$1", [ids.coordinator])).rows).toHaveLength(0);
     await actor("admin"); await rpc("manage_record", ["profiles",ids.coordinator,"role","coordinator"]);
     await save("coordinator_areas", {coordinator_id:ids.coordinator,district_id:district});
@@ -52,7 +53,7 @@ describe("Real PostgreSQL domain workflows and RLS", () => {
     await actor("partner");
     expect((await db.query("select * from produce_listings")).rows).toHaveLength(1);
     expect((await db.query("select * from farms")).rows).toHaveLength(0);
-    await expect(save("partner", "farmer_profiles", { full_name: "Unauthorized farmer", district_id: district, locality: "Kasese area", consent: true })).rejects.toThrow("denied");
+    await expect(save("farmer_profiles", { full_name: "Unauthorized farmer", district_id: district, locality: "Kasese area", consent: true })).rejects.toThrow("denied");
     await expect(rpc("set_user_role", [ids.partner, "admin"])).rejects.toThrow("Administrator");
   });
   it("acceptance reserves inventory; a competing offer cannot double-sell", async () => {
