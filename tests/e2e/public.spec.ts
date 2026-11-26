@@ -1,5 +1,5 @@
 import { test,expect } from "@playwright/test";
-for(const width of [360,390,768,1024,1440]){
+for(const width of [320,360,390,430,768,1024,1280,1440,1920]){
  test(`public navigation, forms and themes at ${width}px`,async({page})=>{
   await page.setViewportSize({width,height:900});await page.goto("/");await expect(page.getByRole("heading",{name:/Save more harvest/})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);
@@ -11,5 +11,12 @@ for(const width of [360,390,768,1024,1440]){
   await page.getByRole("button",{name:"Use light theme"}).filter({visible:true}).first().click();await expect(page.locator("html")).not.toHaveClass(/dark/);
  });
 }
+test("homepage cards and footer links respond to pointer hover",async({page})=>{
+ await page.goto("/");
+ const stepCard=page.getByRole("listitem").filter({hasText:"Register your farm"});
+ await stepCard.hover();await expect(stepCard).toHaveCSS("transform",/matrix\(/);
+ const footerLink=page.locator("footer").getByRole("link",{name:"Privacy policy"});
+ await footerLink.hover();await expect(footerLink).toHaveCSS("text-decoration-line","underline");
+});
 test("contact validation and legal navigation",async({page})=>{await page.goto("/#contact");await page.getByLabel("Your name").fill("Pilot applicant");await page.getByLabel("Email address").fill("pilot@example.org");await page.getByLabel("How can we help?").fill("I would like information about the pilot.");await page.getByRole("button",{name:"Send message"}).click();await expect(page.getByRole("status")).toContainText(/saved|database is connected|try again/i);await page.getByRole("link",{name:"Privacy policy"}).click();await expect(page.getByRole("heading",{name:"Privacy notice"})).toBeVisible();});
 test("protected workspaces cannot be accessed anonymously",async({page})=>{await page.goto("/workspace/users");await expect(page).toHaveURL(/login|setup/);});
