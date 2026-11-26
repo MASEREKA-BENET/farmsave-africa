@@ -42,7 +42,7 @@ test("Auth.js and Prisma complete all workspaces and the farm-to-market workflow
       }
     }
     await expect(partner.getByRole("link", { name: "Partner Marketplace" })).toBeVisible();
-    await expect(partner.getByRole("link", { name: "Crop Guidance" })).toBeVisible();
+    await expect(partner.getByRole("link", { name: "Crop Guidance", exact: true })).toBeVisible();
     await partner.goto("/workspace/users");
     await expect(partner.getByRole("heading", { name: "This page could not be found" })).toBeVisible();
     expect((await partner.request.get("/api/reports")).status()).toBe(403);
