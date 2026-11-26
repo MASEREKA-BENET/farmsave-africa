@@ -1,0 +1,2 @@
+import { defineConfig } from "@playwright/test";
+export default defineConfig({testDir:"./tests/e2e",fullyParallel:false,workers:1,timeout:60000,expect:{timeout:10000},use:{baseURL:process.env.E2E_BASE_URL??"http://127.0.0.1:3107",trace:"retain-on-failure",actionTimeout:15000,navigationTimeout:30000},webServer:process.env.E2E_BASE_URL?undefined:{command:`npm run ${process.env.E2E_DEV_SERVER==="true"?"dev":"start"} -- --hostname 127.0.0.1 --port 3107`,url:"http://127.0.0.1:3107",reuseExistingServer:false,timeout:120000}});
