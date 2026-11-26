@@ -33,7 +33,19 @@ npm run setup:check
 
 Apply migrations to a development database first. Use a separate Neon project/database for production, and use forward migrations for deployed schema changes.
 
-## 3. Development accounts
+## 3. Bootstrap the first production administrator
+
+Register and verify the pilot operator's account through the normal registration flow. Then, as the database owner, grant that verified account its administrator role once, replacing the placeholder with the account UUID:
+
+```sql
+INSERT INTO public.user_roles(user_id, role)
+VALUES ('VERIFIED_OPERATOR_UUID', 'admin')
+ON CONFLICT (user_id) DO UPDATE SET role = 'admin';
+```
+
+Do not expose the database-owner credentials to the web application. Administrators can then approve coordinator access and assign districts, and verify transporter profiles. Coordinator signups remain pending approval; transporter marketplace actions remain disabled until verification.
+
+## 4. Development accounts
 
 To create local workflow accounts, set the following only in a dedicated development environment:
 
@@ -44,7 +56,7 @@ SEED_PASSWORD=your-private-password-of-at-least-12-characters
 
 Then run `npm run seed:users`. It creates farmer, buyer, transporter, coordinator, agricultural-partner, and administrator accounts using `SEED_PASSWORD`. Do not enable this option in production.
 
-## 4. Optional service configuration
+## 5. Optional service configuration
 
 - **Email:** `AUTH_REQUIRE_EMAIL_VERIFICATION` defaults to `true`, so configure `RESEND_API_KEY` and `EMAIL_FROM` before opening production registration. Email verification and password recovery use this provider.
 - **Private files:** configure `S3_ENDPOINT` (if using a non-AWS provider), `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, and `S3_FORCE_PATH_STYLE` as needed.
