@@ -48,8 +48,10 @@ a.card:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
 .connection-card:hover .connection-card-photo { transform: scale(1.045); }
 .connection-card:hover .connection-card-arrow { transform: translateX(4px); background: var(--highlight); }
 .connection-card:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+#how-it-works ol > li { border: 1px solid var(--border); transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
+#how-it-works ol > li:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 16px 30px -20px color-mix(in srgb, var(--primary) 58%, transparent); }
 ::selection { background: #e9a23b; color: #18233a; }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } .card:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } .card:hover, #how-it-works ol > li:hover { transform: none; } }
 @media (min-width: 1024px) { .connection-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); overflow: visible; } }
 @media (prefers-reduced-motion: reduce) { .connection-card:hover { transform: none; } }
 @media (max-width: 640px) { .home-hero-slide { background-position: 56% center; } }
