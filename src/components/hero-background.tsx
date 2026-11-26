@@ -45,7 +45,7 @@ export function HeroBackground() {
   }, []);
 
   const background = (src: string) => ({
-    backgroundImage: `linear-gradient(90deg, rgb(8 28 17 / 82%) 0%, rgb(8 28 17 / 65%) 43%, rgb(8 28 17 / 22%) 100%), url("${src}")`
+    backgroundImage: `linear-gradient(90deg, rgb(15 23 42 / 88%) 0%, rgb(15 23 42 / 70%) 43%, rgb(15 23 42 / 30%) 100%), url("${src}")`
   });
 
   return <div className="home-hero-background" aria-hidden="true">
