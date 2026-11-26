@@ -1,7 +1,7 @@
 # FarmSave Africa
 
-**Smart Post-Harvest Management and Agricultural Market Linkage System**  
-*From Harvest to Market — Less Waste, More Income.*
+Smart Post-Harvest Management and Agricultural Market Linkage System
+From Harvest to Market — Less Waste, More Income.
 
 FarmSave Africa is a Next.js App Router application for farmer, buyer, transporter, field coordinator, and administrator workflows. Its backend is **Neon-hosted PostgreSQL with Prisma and Auth.js**. Private files use S3-compatible object storage. The initial operating catalogue is Kasese District, Uganda.
 
