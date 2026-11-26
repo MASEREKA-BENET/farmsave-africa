@@ -48,6 +48,9 @@ a.card:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
 .connection-card:hover .connection-card-photo { transform: scale(1.045); }
 .connection-card:hover .connection-card-arrow { transform: translateX(4px); background: var(--highlight); }
 .connection-card:focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+footer a { text-underline-offset: .25em; transition: color .2s ease, text-decoration-color .2s ease; }
+footer a:hover { color: var(--accent); text-decoration: underline; text-decoration-color: var(--accent); }
+footer a:focus-visible { border-radius: .2rem; outline: 2px solid var(--accent); outline-offset: 4px; }
 #how-it-works ol > li { border: 1px solid var(--border); transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
 #how-it-works ol > li:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 16px 30px -20px color-mix(in srgb, var(--primary) 58%, transparent); }
 ::selection { background: #e9a23b; color: #18233a; }
