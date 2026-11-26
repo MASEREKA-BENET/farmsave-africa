@@ -14,7 +14,7 @@ export async function seedNeon({ referenceOnly = false } = {}) {
     if (referenceOnly) return;
     const password_hash = await hashPassword(process.env.SEED_PASSWORD);
     const accounts = {};
-    for (const role of ["farmer", "buyer", "transporter", "coordinator", "admin"]) {
+    for (const role of ["farmer", "buyer", "transporter", "coordinator", "agricultural_partner", "admin"]) {
       const email = `${role}@farmsave.example.test`;
       const user = await db.app_users.upsert({ where: { email }, create: { email, password_hash, email_verified_at: new Date() }, update: { password_hash, email_verified_at: new Date(), session_version: { increment: 1 } } });
       accounts[role] = user;
@@ -31,6 +31,6 @@ export async function seedNeon({ referenceOnly = false } = {}) {
 if (process.argv[1]?.replaceAll("\\", "/").endsWith("scripts/seed-neon.mjs")) {
   try {
     await seedNeon({ referenceOnly: process.argv.includes("--reference-only") });
-    console.info(process.argv.includes("--reference-only") ? "Reference catalogue ready; no example accounts created." : "Neon development accounts ready: farmer, buyer, transporter, coordinator, admin @farmsave.example.test. Password is your configured SEED_PASSWORD.");
+     console.info(process.argv.includes("--reference-only") ? "Reference catalogue ready; no example accounts created." : "Neon development accounts ready: farmer, buyer, transporter, coordinator, agricultural_partner, admin @farmsave.example.test. Password is your configured SEED_PASSWORD.");
   } catch { console.error("Seeding could not complete. Check DATABASE_URL, applied migrations and the development seed/password settings."); process.exitCode = 1; }
 }

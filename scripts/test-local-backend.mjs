@@ -7,6 +7,8 @@ import { spawn } from "node:child_process";
 import { seedNeon } from "./seed-neon.mjs";
 const db = new PGlite();
 await db.exec(await readFile("prisma/migrations/202611050100_neon_backend/migration.sql", "utf8"));
+await db.exec(await readFile("prisma/migrations/202611260001_agricultural_partner_enum/migration.sql", "utf8"));
+await db.exec(await readFile("prisma/migrations/202611260002_agricultural_partner_auth/migration.sql", "utf8"));
 const server = createServer(db, { logLevel: LogLevel.Error });
 await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
 const address = server.address();

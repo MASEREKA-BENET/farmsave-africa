@@ -25,7 +25,7 @@ export async function loadSection(kinds: string[], filters: Filters) {
   for (const kind of kinds.filter(k => resources[k].columns.length)) {
     const where: Record<string, unknown> = {};
     if (kind === "produce_listings") {
-      if (auth.role === "buyer") { where.status = "active"; where.quantity = { gt: 0 }; }
+      if (auth.role === "buyer" || auth.role === "agricultural_partner") { where.status = "active"; where.quantity = { gt: 0 }; }
       if (filters.crop) where.crop_id = filters.crop;
       if (filters.district) where.district_id = filters.district;
       if (filters.quantity && Number.isFinite(Number(filters.quantity))) where.quantity = { gt: 0, gte: Number(filters.quantity) };

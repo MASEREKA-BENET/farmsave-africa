@@ -15,9 +15,16 @@ export function AuthForm({ mode, account = "farmer", next, token }: { mode: "log
       const response = await signIn("credentials", { email: values.email, password: values.password, redirect: false, callbackUrl: safeNext(next ?? null) });
       if (response?.ok && !response.error) window.location.assign(response.url ?? safeNext(next ?? null));
       else setResult({ ok: false, message: "Could not sign in. Check your credentials and email verification, or request a password reset." });
-    } else setResult(await authenticate(mode, { ...values, token }));
+    } else {
+      const response = await authenticate(mode, { ...values, token });
+      if (mode === "register" && response.ok && response.nextStep === "sign-in") {
+        const signedIn = await signIn("credentials", { email: values.email, password: values.password, redirect: false, callbackUrl: safeNext(null) });
+        if (signedIn?.ok && !signedIn.error) window.location.assign(signedIn.url ?? "/workspace");
+        else setResult({ ok: true, message: "Your account was created. Sign in to continue." });
+      } else setResult(response);
+    }
   } catch { setResult({ ok: false, message: "Unable to connect. Please try again." }); } })}>
-    {mode === "register" && <><label>Full name<input autoComplete="name" required minLength={2} maxLength={120} {...register("full_name")} /></label><label>I’m joining as<select {...register("account_type")}><option value="farmer">Farmer</option><option value="buyer">Buyer</option><option value="transporter">Transporter (verification required)</option><option value="coordinator">Field coordinator (approval required)</option></select></label></>}
+    {mode === "register" && <><label>Full name<input autoComplete="name" required minLength={2} maxLength={120} {...register("full_name")} /></label><label>I’m joining as<select {...register("account_type")}><option value="farmer">Farmer</option><option value="buyer">Buyer</option><option value="transporter">Transporter (verification required)</option><option value="coordinator">Field coordinator (approval required)</option><option value="agricultural_partner">Agricultural partner</option></select></label></>}
     {mode !== "password" && <label>Email address<input type="email" autoComplete="email" required {...register("email")} /></label>}
     {mode === "password" && !token && <label>Current password<input type="password" required autoComplete="current-password" maxLength={128} {...register("current_password")} /></label>}
     {mode !== "reset" && mode !== "verify" && <label>Password<input type="password" aria-label="Password" minLength={12} maxLength={128} required autoComplete={mode === "login" ? "current-password" : "new-password"} {...register("password")} /><span className="mt-1 block text-xs font-normal text-muted-foreground">At least 12 characters.</span></label>}

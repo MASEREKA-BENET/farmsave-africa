@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth-options";
 import { authConfigured, prisma } from "@/lib/db/prisma";
 
-export const roles = ["farmer", "buyer", "transporter", "coordinator", "admin"] as const;
+export const roles = ["farmer", "buyer", "transporter", "coordinator", "agricultural_partner", "admin"] as const;
 export type Role = typeof roles[number];
 
 export const identity = cache(async () => {

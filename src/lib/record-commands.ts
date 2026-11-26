@@ -34,8 +34,8 @@ export function recordCommands(kind:string,r:DataRow,role:Role,userId:string):Co
   if(["submitted","assigned"].includes(String(r.status)))result.push(manage("Cancel request","cancelled","",true));
  }
  if(kind==="transport_profiles"&&role==="admin"&&!r.verified)result.push(manage("Verify transporter","verify"));
- if(kind==="profiles"&&role==="admin"&&r.id!==userId) {
-  result.push({label:"Change approved role",name:"manage_record",params:{kind,record_id:r.id,command:"role"},fields:[{name:"value",label:"Approved role",type:"select",options:["farmer","buyer","transporter","coordinator","admin"]}],description:"Confirm the person’s identity and role authorization. Coordinator access also requires a district assignment."});
+  if(kind==="profiles"&&role==="admin"&&r.id!==userId) {
+   result.push({label:"Change approved role",name:"set_user_role",params:{user_ref:r.id},fields:[{name:"role_name",label:"Approved role",type:"select",options:["farmer","buyer","transporter","coordinator","agricultural_partner","admin"]}],description:"Confirm the person’s identity and role authorization. Coordinator access also requires a district assignment."});
   result.push({label:"Change account status",name:"manage_record",params:{kind,record_id:r.id,command:"status"},fields:[{name:"value",label:"Account status",type:"select",options:["active","suspended","deactivated"]}],destructive:true});
  }
  if(kind==="orders"&&role==="admin"&&r.status==="disputed")result.push({label:"Resolve dispute",name:"resolve_dispute",params:{order_ref:r.id},fields:[{name:"resolution",label:"Agreed resolution",type:"select",options:["resume","returned_and_cancelled"]},{name:"reason",label:"Resolution evidence and agreement",type:"textarea"}],description:"Only release inventory after confirming that the reserved produce has been returned or was never collected. Resume returns fulfillment to Preparing."});

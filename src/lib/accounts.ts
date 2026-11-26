@@ -17,7 +17,7 @@ export async function throttle(bucket: string, limit = 10, seconds = 900) {
 }
 
 export async function registerAccount(input: { email: string; password: string; full_name: string; account_type: string }) {
-  if (!["farmer", "buyer", "transporter", "coordinator"].includes(input.account_type)) throw new Error("Invalid account type");
+  if (!["farmer", "buyer", "transporter", "coordinator", "agricultural_partner"].includes(input.account_type)) throw new Error("Invalid account type");
   const password_hash = await hashPassword(input.password);
   return prisma().$transaction(async db => {
     const user = await db.app_users.create({ data: { email: emailAddress(input.email), password_hash, email_verified_at: verificationRequired() ? null : new Date() } });

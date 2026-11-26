@@ -8,6 +8,7 @@ import { hash as bcryptHash } from "bcryptjs";
 import { prisma } from "../src/lib/db/prisma";
 import { actorTransaction, executeCommand, aggregate, databaseError, callFunction } from "../src/lib/db/context";
 import { resources } from "../src/lib/resources";
+import { sectionFor } from "../src/lib/navigation";
 import { queryTable, pagedTable } from "../src/lib/db/queries";
 import { registerAccount, checkCredentials, resetPasswordWithToken, verifyEmailToken, tokenHash, changePassword } from "../src/lib/accounts";
 import { hashPassword, verifyPassword } from "../src/lib/passwords";
@@ -26,6 +27,8 @@ const command = (role: string, name: string, p: Record<string, unknown>) => exec
 beforeAll(async () => {
   postgres = new PGlite();
   await postgres.exec(await readFile("prisma/migrations/202611050100_neon_backend/migration.sql", "utf8"));
+  await postgres.exec(await readFile("prisma/migrations/202611260001_agricultural_partner_enum/migration.sql", "utf8"));
+  await postgres.exec(await readFile("prisma/migrations/202611260002_agricultural_partner_auth/migration.sql", "utf8"));
   await postgres.exec(await readFile("prisma/seed.sql", "utf8"));
   server = createServer(postgres, { logLevel: LogLevel.Error });
   await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
@@ -33,7 +36,7 @@ beforeAll(async () => {
   process.env.DATABASE_URL = `postgresql://postgres:postgres@127.0.0.1:${address.port}/postgres?sslmode=disable`;
   process.env.DATABASE_POOL_MAX = "1";
   process.env.AUTH_REQUIRE_EMAIL_VERIFICATION = "false";
-  for (const role of ["farmer", "buyer", "transporter", "coordinator", "other"]) {
+  for (const role of ["farmer", "buyer", "transporter", "coordinator", "agricultural_partner", "other"]) {
     const account = await registerAccount({ email: `${role}@prisma.example.test`, password, full_name: `Test ${role}`, account_type: role === "other" ? "farmer" : role });
     users[role] = account.id;
   }
@@ -54,6 +57,7 @@ describe("Neon schema through Prisma's PostgreSQL adapter", () => {
     expect(await checkCredentials(" FARMER@PRISMA.EXAMPLE.TEST ", password)).toMatchObject({ id: users.farmer });
     expect(await checkCredentials("farmer@prisma.example.test", "incorrect-password")).toBeNull();
     await expect(registerAccount({ email: "injected@prisma.example.test", password, full_name: "Injected role", account_type: "admin" })).rejects.toThrow("Invalid account type");
+    await expect(registerAccount({ email: "farmer@prisma.example.test", password, full_name: "Duplicate farmer", account_type: "farmer" })).rejects.toMatchObject({ code: "P2002" });
   });
   it("preserves imported bcrypt credentials and upgrades them at successful login", async () => {
     const old = await bcryptHash(password, 10);
@@ -86,10 +90,22 @@ describe("Neon schema through Prisma's PostgreSQL adapter", () => {
     const result = await pagedTable(users.buyer, "produce_listings", { where: { status: "active", crops: { is: { name: { contains: "tom", mode: "insensitive" } } }, districts: { is: { regions: { is: { country_id: "10000000-0000-0000-0000-000000000001" } } } } }, take: 20 });
     expect(result.count).toBe(1); expect(result.rows[0].id).toBe(listing);
   });
+  it("registers agricultural partners with read-only public marketplace access", async () => {
+    expect(sectionFor("agricultural_partner", "marketplace")?.write).toEqual([]);
+    expect(sectionFor("agricultural_partner", "users")).toBeNull();
+    expect(await prisma().user_roles.findUniqueOrThrow({ where: { user_id: users.agricultural_partner } })).toMatchObject({ role: "agricultural_partner" });
+    expect(await queryTable(users.agricultural_partner, "produce_listings")).toHaveLength(1);
+    expect(await queryTable(users.agricultural_partner, "farms")).toHaveLength(0);
+    await expect(save("agricultural_partner", "farmer_profiles", { full_name: "Unauthorized farmer", district_id: district, locality: "Kasese area", consent: true })).rejects.toThrow();
+    await expect(command("agricultural_partner", "set_user_role", { user_ref: users.agricultural_partner, role_name: "admin" })).rejects.toThrow();
+    await command("admin", "set_user_role", { user_ref: users.other, role_name: "agricultural_partner" });
+    expect(await prisma().user_roles.findUniqueOrThrow({ where: { user_id: users.other } })).toMatchObject({ role: "agricultural_partner", approved_by: users.admin });
+    await expect(command("admin", "set_user_role", { user_ref: users.admin, role_name: "farmer" })).rejects.toThrow("own role");
+  });
   it("supports zero-argument reminders and every resource-table query used by the workspaces",async()=>{
     await actorTransaction(users.farmer,db=>callFunction(db,"harvest_reminders"));
     for(const [name,resource] of Object.entries(resources))if(resource.columns.length)expect(Array.isArray(await queryTable(users.admin,name,{take:1}))).toBe(true);
-    for(const role of ["farmer","buyer","transporter","coordinator","admin"])expect(await aggregate(users[role],"workspace_summary")).toBeTruthy();
+    for(const role of ["farmer","buyer","transporter","coordinator","agricultural_partner","admin"])expect(await aggregate(users[role],"workspace_summary")).toBeTruthy();
   });
   it("reserves partial orders, rejects competing allocations and protects available balance", async () => {
     offer = (await command("buyer", "submit_offer", { listing, qty: 60, price: 1800, note: "Collect" }))!;

@@ -904,5 +904,6 @@ enum app_role {
   buyer
   transporter
   coordinator
+  agricultural_partner
   admin
 }

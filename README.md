@@ -36,6 +36,7 @@ For development accounts, set `FARMSAVE_DEV_SEED=true` and a private `SEED_PASSW
 - **Buyer:** produce search, offers, purchase confirmation, and order milestones.
 - **Transporter:** vehicle profile, service areas, quotes, and delivery milestones.
 - **Field coordinator:** district-authorized assisted enrollment, surveys, training, harvest verification, and field reports.
+- **Agricultural partner:** read-only produce discovery and published crop guidance.
 - **Administrator:** role approvals, transporter verification, operating areas, crop catalogue, reviewed guidance, disputes, reporting, contact inbox, and audit history.
 
 Inventory reservations, releases, losses, and sales are PostgreSQL transactions. The database enforces row-level security with restricted runtime roles and explicit actor context; sensitive mutations use allowlisted database functions. Quantities remain tied to their recorded units, financial values use UGX, and marketplace offers are not treated as completed revenue until fulfillment is confirmed.

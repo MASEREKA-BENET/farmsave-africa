@@ -20,8 +20,9 @@ const commandSchemas:Record<string,z.ZodType>={
  transition_order:z.object({order_id:z.guid(),target:z.enum(["confirm_purchase","preparing","ready_for_collection","completed","cancelled","disputed"]),actual_price:z.coerce.number().positive().nullable().default(null)}),
  quote_transport:z.object({request:z.guid(),charge:z.coerce.number().positive(),note:z.string().max(1000).default("")}),
  assign_transport:z.object({quote:z.guid()}),
- transition_delivery:z.object({delivery:z.guid(),target:z.enum(["picked_up","delivered","confirm_delivery","cancelled","disputed"]),charge:z.coerce.number().nonnegative().nullable().default(null)}),
- manage_record:z.object({kind:z.string().max(50),record_id:z.guid(),command:z.string().max(50),value:z.string().max(3000).default("")}),
+  transition_delivery:z.object({delivery:z.guid(),target:z.enum(["picked_up","delivered","confirm_delivery","cancelled","disputed"]),charge:z.coerce.number().nonnegative().nullable().default(null)}),
+  manage_record:z.object({kind:z.string().max(50),record_id:z.guid(),command:z.string().max(50),value:z.string().max(3000).default("")}),
+  set_user_role:z.object({user_ref:z.guid(),role_name:z.enum(["farmer","buyer","transporter","coordinator","agricultural_partner","admin"])}),
  update_profile:z.object({p_name:z.string().trim().min(2).max(120),p_phone:z.string().max(30)})
  ,delete_empty_record:z.object({kind:z.string().max(50),record_id:z.guid()})
  ,resolve_dispute:z.object({order_ref:z.guid(),resolution:z.enum(["resume","returned_and_cancelled"]),reason:z.string().trim().min(10).max(3000)})

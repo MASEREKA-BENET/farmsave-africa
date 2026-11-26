@@ -2,7 +2,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { readFile } from "node:fs/promises";
 import { beforeAll, afterAll, describe, expect, it } from "vitest";
 let db: PGlite;
-const ids = { farmer: "a0000000-0000-0000-0000-000000000001", buyer: "a0000000-0000-0000-0000-000000000002", transporter: "a0000000-0000-0000-0000-000000000003", coordinator: "a0000000-0000-0000-0000-000000000004", admin: "a0000000-0000-0000-0000-000000000005", stranger: "a0000000-0000-0000-0000-000000000006" };
+const ids = { farmer: "a0000000-0000-0000-0000-000000000001", buyer: "a0000000-0000-0000-0000-000000000002", transporter: "a0000000-0000-0000-0000-000000000003", coordinator: "a0000000-0000-0000-0000-000000000004", admin: "a0000000-0000-0000-0000-000000000005", stranger: "a0000000-0000-0000-0000-000000000006", partner: "a0000000-0000-0000-0000-000000000007" };
 const district = "10000000-0000-0000-0000-000000000003";
 const crop = "30000000-0000-0000-0000-000000000001";
 let farmer: string, farm: string, farmCrop: string, harvest: string, listing: string, offer: string, order: string, request: string, quote: string, delivery: string, assisted: string;
@@ -12,6 +12,8 @@ async function rpc(name: string, values: unknown[]) { const r = await db.query<{
 beforeAll(async () => {
   db = new PGlite();
   await db.exec(await readFile("prisma/migrations/202611050100_neon_backend/migration.sql", "utf8"));
+  await db.exec(await readFile("prisma/migrations/202611260001_agricultural_partner_enum/migration.sql", "utf8"));
+  await db.exec(await readFile("prisma/migrations/202611260002_agricultural_partner_auth/migration.sql", "utf8"));
   await db.exec(await readFile("prisma/seed.sql", "utf8"));
   for (const [key, id] of Object.entries(ids)) {
     await db.query("insert into app_users(id,email,email_verified_at) values($1,$2,now())", [id, `${key}@test.example`]);
@@ -26,6 +28,8 @@ describe("Real PostgreSQL domain workflows and RLS", () => {
     await actor("buyer"); await rpc("enroll_account", ["buyer"]);
     await actor("transporter"); await rpc("enroll_account", ["transporter"]);
     await actor("coordinator"); await rpc("enroll_account", ["coordinator"]);
+    await actor("partner"); await rpc("enroll_account", ["agricultural_partner"]);
+    expect((await db.query("select role from user_roles where user_id=$1", [ids.partner])).rows[0].role).toBe("agricultural_partner");
     expect((await db.query("select * from user_roles where user_id=$1", [ids.coordinator])).rows).toHaveLength(0);
     await actor("admin"); await rpc("manage_record", ["profiles",ids.coordinator,"role","coordinator"]);
     await save("coordinator_areas", {coordinator_id:ids.coordinator,district_id:district});
@@ -45,6 +49,11 @@ describe("Real PostgreSQL domain workflows and RLS", () => {
     await expect(save("actual_harvest", {harvest_id:harvest,quantity:200,harvested_on:"2026-11-08",quality:"A",reason:"unauthorized"})).rejects.toThrow("access denied");
     await expect(rpc("submit_offer", [listing,0,1800,""])).rejects.toThrow("invalid");
     offer=await rpc("submit_offer", [listing,60,1800,"Collect tomorrow"]);
+    await actor("partner");
+    expect((await db.query("select * from produce_listings")).rows).toHaveLength(1);
+    expect((await db.query("select * from farms")).rows).toHaveLength(0);
+    await expect(save("partner", "farmer_profiles", { full_name: "Unauthorized farmer", district_id: district, locality: "Kasese area", consent: true })).rejects.toThrow("denied");
+    await expect(rpc("set_user_role", [ids.partner, "admin"])).rejects.toThrow("Administrator");
   });
   it("acceptance reserves inventory; a competing offer cannot double-sell", async () => {
     await actor("buyer"); const competing=await rpc("submit_offer", [listing,60,1900,""]);

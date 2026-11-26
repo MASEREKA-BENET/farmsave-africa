@@ -28,7 +28,8 @@ const functions: Record<string, readonly (readonly [string, string])[]> = {
   resolve_dispute: [["order_ref", "uuid"], ["resolution", "text"], ["reason", "text"]],
   convert_crop_quantity: [["crop", "uuid"], ["quantity", "numeric"], ["source_unit", "text"], ["target_unit", "text"]],
   harvest_reminders: [],
-  submit_contact: [["p_name", "text"], ["p_email", "text"], ["p_message", "text"], ["p_bucket", "text"]]
+  submit_contact: [["p_name", "text"], ["p_email", "text"], ["p_message", "text"], ["p_bucket", "text"]],
+  set_user_role: [["user_ref", "uuid"], ["role_name", "text"]]
 };
 
 export async function callFunction(db: DatabaseTransaction, name: string, parameters: Record<string, unknown> = {}) {

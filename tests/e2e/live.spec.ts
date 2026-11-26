@@ -28,12 +28,12 @@ async function act(page: Page, path: string, kind: string, id: string, label: st
   await row.getByRole("button", { name: label, exact: true }).click(); const dialog = page.getByRole("dialog"); if (fill) await fill(dialog);
   await dialog.getByRole("button", { name: "Confirm", exact: true }).click(); await expect(dialog).not.toBeVisible();
 }
-test("Auth.js and Prisma complete all five workspaces and the farm-to-market workflow", async ({ browser }) => {
+test("Auth.js and Prisma complete all workspaces and the farm-to-market workflow", async ({ browser }) => {
   test.setTimeout(300000);
-  const contexts = await Promise.all(Array.from({ length: 5 }, () => browser.newContext({ viewport: { width: 1440, height: 1000 } })));
-  const [farmer, buyer, transporter, coordinator, admin] = await Promise.all(contexts.map(context => context.newPage()));
+  const contexts = await Promise.all(Array.from({ length: 6 }, () => browser.newContext({ viewport: { width: 1440, height: 1000 } })));
+  const [farmer, buyer, transporter, coordinator, admin, partner] = await Promise.all(contexts.map(context => context.newPage()));
   try {
-    for (const [page, role] of [[farmer, "farmer"], [buyer, "buyer"], [transporter, "transporter"], [coordinator, "coordinator"], [admin, "admin"]] as const) {
+    for (const [page, role] of [[farmer, "farmer"], [buyer, "buyer"], [transporter, "transporter"], [coordinator, "coordinator"], [admin, "admin"], [partner, "agricultural_partner"]] as const) {
       await login(page, role);
       await expect(page.getByRole("heading", { name: /Welcome,/ })).toBeVisible();
       for (const width of [360, 390, 768, 1024, 1440]) {
@@ -41,6 +41,11 @@ test("Auth.js and Prisma complete all five workspaces and the farm-to-market wor
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       }
     }
+    await expect(partner.getByRole("link", { name: "Partner Marketplace" })).toBeVisible();
+    await expect(partner.getByRole("link", { name: "Crop Guidance" })).toBeVisible();
+    await partner.goto("/workspace/users");
+    await expect(partner.getByRole("heading", { name: "This page could not be found" })).toBeVisible();
+    expect((await partner.request.get("/api/reports")).status()).toBe(403);
     let farmerId="";
     const farmName = `E2E Neon farm ${Date.now()}`;
     await add(farmer, "farms", "farms", async d => {
@@ -100,8 +105,7 @@ test("Auth.js and Prisma complete all five workspaces and the farm-to-market wor
 test("registration, Auth.js sessions, password changes and logout use the new database", async ({ page }) => {
   test.skip(process.env.AUTH_REQUIRE_EMAIL_VERIFICATION !== "false", "This no-mail test requires explicit development-only verification disablement; production verification is tested separately.");
   const email = `registration-${Date.now()}@farmsave.example.test`;
-  await page.goto("/register?as=farmer"); await page.getByLabel("Full name", { exact: true }).fill("E2E new farmer"); await page.getByLabel("Email address").fill(email); await page.getByLabel("Password", { exact: true }).fill(process.env.SEED_PASSWORD!); await page.getByRole("checkbox").check(); await page.getByRole("button", { name: "Create account", exact: true }).click(); await expect(page.getByRole("status")).toContainText("registration has been processed");
-  await login(page, email);
+  await page.goto("/register?as=farmer"); await page.getByLabel("Full name", { exact: true }).fill("E2E new farmer"); await page.getByLabel("Email address").fill(email); await page.getByLabel("Password", { exact: true }).fill(process.env.SEED_PASSWORD!); await page.getByRole("checkbox").check(); await page.getByRole("button", { name: "Create account", exact: true }).click(); await expect(page).toHaveURL(/\/workspace$/); await expect(page.getByRole("heading", { name: /Welcome,/ })).toBeVisible();
   await page.goto("/account/password"); await page.getByLabel("Current password", { exact: true }).fill(process.env.SEED_PASSWORD!); await page.getByLabel("Password", { exact: true }).fill("Changed-browser-password-2026"); await page.getByRole("button", { name: "Update password" }).click(); await expect(page.getByRole("status")).toContainText("previous sessions are revoked");
   await page.goto("/workspace"); await expect(page).toHaveURL(/\/login/); await login(page, email, "Changed-browser-password-2026");
   await page.getByRole("button", { name: "Sign out", exact: true }).filter({ visible: true }).first().click(); await expect(page).toHaveURL(/\/login$/); await page.goto("/workspace"); await expect(page).toHaveURL(/\/login/);

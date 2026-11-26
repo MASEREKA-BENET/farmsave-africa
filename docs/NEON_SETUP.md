@@ -42,11 +42,11 @@ FARMSAVE_DEV_SEED=true
 SEED_PASSWORD=your-private-password-of-at-least-12-characters
 ```
 
-Then run `npm run seed:users`. It creates farmer, buyer, transporter, coordinator, and administrator accounts using `SEED_PASSWORD`. Do not enable this option in production.
+Then run `npm run seed:users`. It creates farmer, buyer, transporter, coordinator, agricultural-partner, and administrator accounts using `SEED_PASSWORD`. Do not enable this option in production.
 
 ## 4. Optional service configuration
 
-- **Email:** set `RESEND_API_KEY` and `EMAIL_FROM` for verification and password recovery messages.
+- **Email:** `AUTH_REQUIRE_EMAIL_VERIFICATION` defaults to `true`, so configure `RESEND_API_KEY` and `EMAIL_FROM` before opening production registration. Email verification and password recovery use this provider.
 - **Private files:** configure `S3_ENDPOINT` (if using a non-AWS provider), `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, and `S3_FORCE_PATH_STYLE` as needed.
 - **Live browser workflow:** seed a dedicated development database, set `E2E_LIVE=true`, build the app, then run `npm run test:e2e:live`.
 
